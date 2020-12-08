@@ -4,6 +4,7 @@ import {
   ConnectionRecord,
   encodeInvitationToUrl,
   decodeInvitationFromUrl,
+  CredentialRecord
 } from 'aries-framework-javascript';
 import React, { useEffect, useState } from 'react';
 import {
@@ -19,13 +20,16 @@ import {
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { initAgent } from './agentInit';
 import Connection from './components/connection';
+import Credential from './components/credential';
+import axios from 'axios';
 
 const App = () => {
   const [agent, setAgent] = useState<Agent>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [ourInvitation, setOurInvitation] = useState(null);
   const [theirInvitation, setTheirInvitation] = useState(null);
-  const [connections, setConnections] = useState<ConnectionRecord[]>(null);
+  const [connections, setConnections] = useState<ConnectionRecord[]>([]);
+  const [credentials, setCredentials] = useState<CredentialRecord[]>([]);
 
   async function setupAgent() {
     const agent = await initAgent({
@@ -68,6 +72,30 @@ const App = () => {
     }
   }
 
+  const updateCredentials = async () => {
+    const credentials = await agent.credentials.getCredentials();
+    setCredentials(credentials);
+  }
+
+  const issueCredential = async () => {
+    // CREATE CONNECTION
+    const newConnection = await agent.connections.createConnection({ autoAcceptConnection: true });
+    const invitationUrl = await encodeInvitationToUrl(newConnection.invitation, agent.getMediatorUrl());
+
+    // CALL NODEJS AGENT
+    await axios.post("http://<ip>:5000/credential/issue", { invitationUrl })
+      .then(async (res) => {
+        setTimeout(async () => {
+          const [cred] = await agent.credentials.getCredentials();
+          console.log("creds: ", cred);
+          console.log('credId: ', cred.credentialId);
+          // await agent.credentials.acceptCredential(cred);
+          updateCredentials();
+        }, 5000)
+      })
+      .catch((err) => { console.log("Issue Cred Error: " + err) });
+  }
+
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -108,7 +136,7 @@ const App = () => {
               )}
             </View>
             {/* CONNECTIONS */}
-            {connections && (<View style={styles.connectionsView}>
+            {isInitialized && (<View style={styles.connectionsView}>
               <Text style={styles.title}>Connections: </Text>
               <Button
                 title="Refresh List"
@@ -119,6 +147,22 @@ const App = () => {
                 )
               })}
             </View>)}
+            {/* CREDENTIALS */}
+            {isInitialized && (<View style={styles.credentialsView}>
+              <Text style={styles.title}>Credentials: </Text>
+              <Button
+                title="ISSUE"
+                onPress={issueCredential} />
+              <Button
+                title="Refresh List"
+                onPress={updateCredentials} />
+              {credentials.map((credential) => {
+                return (
+                  <Credential credential={credential} key={credential.id} />
+                )
+              })}
+            </View>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -151,6 +195,10 @@ const styles = StyleSheet.create({
     borderColor: 'black',
   },
   connectionsView: {
+    marginTop: 20,
+    padding: 10
+  },
+  credentialsView: {
     marginTop: 20,
     padding: 10
   },
