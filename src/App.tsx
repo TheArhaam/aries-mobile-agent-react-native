@@ -79,7 +79,7 @@ const App = () => {
 
   const issueCredential = async () => {
     // CREATE CONNECTION
-    const newConnection = await agent.connections.createConnection({ autoAcceptConnection: true });
+    const newConnection = await agent.connections.createConnection({ autoAcceptConnection: true, alias: 'Issuer' });
     const invitationUrl = await encodeInvitationToUrl(newConnection.invitation, agent.getMediatorUrl());
 
     // CALL NODEJS AGENT
@@ -89,7 +89,7 @@ const App = () => {
           const [cred] = await agent.credentials.getCredentials();
           console.log("creds: ", cred);
           console.log('credId: ', cred.credentialId);
-          // await agent.credentials.acceptCredential(cred);
+          await agent.credentials.acceptCredential(cred);
           updateCredentials();
         }, 5000)
       })
