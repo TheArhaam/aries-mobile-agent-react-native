@@ -4,7 +4,7 @@ import {
   ConnectionRecord,
   encodeInvitationToUrl,
   decodeInvitationFromUrl,
-  CredentialRecord
+  CredentialRecord,
 } from 'aries-framework-javascript';
 import React, { useEffect, useState } from 'react';
 import {
@@ -21,7 +21,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { initAgent } from './agentInit';
 import Connection from './components/connection';
 import Credential from './components/credential';
-import axios from 'axios';
+let debug = require('debug');
 
 const App = () => {
   const [agent, setAgent] = useState<Agent>(null);
@@ -31,13 +31,22 @@ const App = () => {
   const [connections, setConnections] = useState<ConnectionRecord[]>([]);
   const [credentials, setCredentials] = useState<CredentialRecord[]>([]);
 
+  // Uncomment to enable afj logging
+  // useEffect(() => {
+  //   debug.enable('aries-framework-javascript');
+  // }, [])
+
   async function setupAgent() {
     const agent = await initAgent({
       mediatorUrl: 'https://90eab166f78c.ngrok.io',
     });
     console.log('got agent');
-
-    await agent.init();
+    try {
+      await agent.init();
+    }
+    catch (err) {
+      console.log("agent.init() ERR: ", err);
+    }
     console.log('agent initialized');
     setAgent(agent);
     setIsInitialized(true);
@@ -75,25 +84,6 @@ const App = () => {
   const updateCredentials = async () => {
     const credentials = await agent.credentials.getCredentials();
     setCredentials(credentials);
-  }
-
-  const issueCredential = async () => {
-    // CREATE CONNECTION
-    const newConnection = await agent.connections.createConnection({ autoAcceptConnection: true, alias: 'Issuer' });
-    const invitationUrl = await encodeInvitationToUrl(newConnection.invitation, agent.getMediatorUrl());
-
-    // CALL NODEJS AGENT
-    await axios.post("http://<ip>:5000/credential/issue", { invitationUrl })
-      .then(async (res) => {
-        setTimeout(async () => {
-          const [cred] = await agent.credentials.getCredentials();
-          console.log("creds: ", cred);
-          console.log('credId: ', cred.credentialId);
-          await agent.credentials.acceptCredential(cred);
-          updateCredentials();
-        }, 5000)
-      })
-      .catch((err) => { console.log("Issue Cred Error: " + err) });
   }
 
   return (
@@ -143,7 +133,7 @@ const App = () => {
                 onPress={updateConnections} />
               {connections.map((connection) => {
                 return (
-                  <Connection connection={connection} key={connection.id} />
+                  <Connection agent={agent} connection={connection} key={connection.id} />
                 )
               })}
             </View>)}
@@ -151,14 +141,11 @@ const App = () => {
             {isInitialized && (<View style={styles.credentialsView}>
               <Text style={styles.title}>Credentials: </Text>
               <Button
-                title="ISSUE"
-                onPress={issueCredential} />
-              <Button
                 title="Refresh List"
                 onPress={updateCredentials} />
               {credentials.map((credential) => {
                 return (
-                  <Credential credential={credential} key={credential.id} />
+                  <Credential agent={agent} credential={credential} key={credential.id} />
                 )
               })}
             </View>
