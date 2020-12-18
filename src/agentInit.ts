@@ -112,8 +112,6 @@ class HttpOutboundTransporter implements OutboundTransporter {
 // ==========================================================
 // INITIALIZATIONS
 // ==========================================================
-// const inbound = new DummyInboundTransporter();
-// const outbound = new DummyOutboundTransporter();
 const inbound = new PollingInboundTransporter();
 const outbound = new HttpOutboundTransporter();
 
@@ -128,6 +126,7 @@ const initAgent = async (partialConfig: Partial<InitConfig> = {}) => {
     autoAcceptConnections: true,
     poolName: 'test-103',
     genesisPath,
+    publicDidSeed: '00000000000000000000000000000001',
     ...partialConfig,
   };
 

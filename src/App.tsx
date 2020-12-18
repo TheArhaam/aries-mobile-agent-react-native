@@ -123,7 +123,7 @@ const App = () => {
                 onPress={updateConnections} />
               {connections.map((connection) => {
                 return (
-                  <Connection connection={connection} key={connection.id} />
+                  <Connection agent={agent} connection={connection} key={connection.id} />
                 )
               })}
             </View>)}
@@ -135,7 +135,7 @@ const App = () => {
                 onPress={updateCredentials} />
               {credentials.map((credential) => {
                 return (
-                  <Credential credential={credential} key={credential.id} />
+                  <Credential agent={agent} credential={credential} key={credential.id} />
                 )
               })}
             </View>
