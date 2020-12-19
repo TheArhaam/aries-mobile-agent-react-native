@@ -1,16 +1,19 @@
 import React from 'react';
-import { CredentialRecord } from 'aries-framework-javascript';
+import { CredentialRecord, Agent } from 'aries-framework-javascript';
 import {
   StyleSheet,
   View,
   Text,
+  Button
 } from 'react-native';
 
 type CredentialProps = {
-  credential: CredentialRecord
+  credential: CredentialRecord,
+  agent: Agent
 }
 
-const Credential = ({ credential }: CredentialProps) => {
+const Credential = ({ credential, agent }: CredentialProps) => {
+
   const value = JSON.parse(credential.getValue());
   return (
     <View style={styles.credentialCard}>
@@ -24,6 +27,12 @@ const Credential = ({ credential }: CredentialProps) => {
             <Text>{attr["name"]}: {attr["value"]}</Text>
           )
         })
+      )}
+      {(credential.state == "OFFER_RECEIVED") && (
+        <Button title="Accept Credential" onPress={async () => {
+          await agent.credentials.acceptCredential(credential);
+          console.log("Credential Accepted");
+        }} />
       )}
     </View>
   );
