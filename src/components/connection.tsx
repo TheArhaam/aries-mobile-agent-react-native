@@ -1,12 +1,12 @@
-import React from 'react';
-import { ConnectionRecord, Agent, SchemaTemplate } from 'aries-framework-javascript';
+import React, { useState } from 'react';
+import { ConnectionRecord, Agent, SchemaTemplate, CredDefTemplate, CredentialPreview } from 'aries-framework-javascript';
 import {
   StyleSheet,
   View,
   Text,
-  Button
+  Button,
 } from 'react-native';
-import { CredentialPreview, CredentialPreviewAttribute } from 'aries-framework-javascript/build/lib/protocols/credentials/messages/CredentialOfferMessage';
+import { CredentialPreviewAttribute } from 'aries-framework-javascript/build/lib/protocols/credentials/messages/CredentialOfferMessage';
 
 type ConnectionProps = {
   connection: ConnectionRecord,
@@ -14,6 +14,7 @@ type ConnectionProps = {
 }
 
 const Connection = ({ connection, agent }: ConnectionProps) => {
+  const [credDefId, setCredDefId] = useState<CredDefId>("")
 
   const issueCredentialToConnection = async () => {
     // CREATE SCHEMA
@@ -35,7 +36,7 @@ const Connection = ({ connection, agent }: ConnectionProps) => {
     console.log("===========================================================================");
     console.log("CREATE CREDENTIAL DEFINITION")
     console.log("===========================================================================");
-    const definitionTemplate = {
+    const definitionTemplate: CredDefTemplate = {
       schema: ledgerSchema,
       tag: 'default',
       signatureType: 'CL',
@@ -45,6 +46,7 @@ const Connection = ({ connection, agent }: ConnectionProps) => {
     const ledgerCredDef = await agent.ledger.getCredentialDefinition(credDefId);
     console.log('ledgerCredDefId: ', credDefId);
     console.log('ledgerCredDef: ', ledgerCredDef);
+    setCredDefId(credDefId);
 
     // ISSUE CREDENTIAL
     console.log("===========================================================================");
@@ -72,6 +74,49 @@ const Connection = ({ connection, agent }: ConnectionProps) => {
 
   }
 
+  const sendProofRequestToConnection = async () => {
+    console.log("===========================================================================");
+    console.log("SEND PROOF REQUEST")
+    console.log("===========================================================================");
+    const req_a = {
+      "0_name_uuid": {
+        "name": "name",
+        "restrictions": [
+          {
+            "cred_def_id": credDefId
+          }
+        ]
+      },
+      "0_age_uuid": {
+        "name": "age",
+        "restrictions": [
+          {
+            "cred_def_id": credDefId
+          }
+        ]
+      }
+    }
+    const proofRequestMessage = {
+      name: "Proof of Education",
+      version: "1.0",
+      nonce: Math.random().toString(),
+      requestedAttributes: req_a,
+      requestedPredicates: {}
+    };
+
+    const proofRequestTemplate = {
+      credentialDefinitionId: credDefId,
+      comment: 'Test Proof',
+      proofRequest: proofRequestMessage
+    }
+
+    console.log("Proof Request Template: ", proofRequestTemplate);
+
+    await agent.proof.sendProofRequest(connection, proofRequestTemplate);
+
+    console.log("Sent!")
+  }
+
   return (
     <View style={styles.connectionCard}>
       <Text>Alias: {connection.alias}</Text>
@@ -82,6 +127,9 @@ const Connection = ({ connection, agent }: ConnectionProps) => {
       {(connection.alias != 'Mediator') && (<Button
         title="Issue Credential"
         onPress={() => { issueCredentialToConnection(); }} />)}
+      {(connection.alias != 'Mediator') && (<Button
+        title="Send Proof Request"
+        onPress={() => { sendProofRequestToConnection(); }} />)}
     </View>
   );
 };

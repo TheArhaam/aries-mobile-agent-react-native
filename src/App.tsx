@@ -4,7 +4,8 @@ import {
   ConnectionRecord,
   encodeInvitationToUrl,
   decodeInvitationFromUrl,
-  CredentialRecord
+  CredentialRecord,
+  ProofRecord
 } from 'aries-framework-javascript';
 import React, { useEffect, useState } from 'react';
 import {
@@ -21,6 +22,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { initAgent } from './agentInit';
 import Connection from './components/connection';
 import Credential from './components/credential';
+import ProofRequest from './components/proofrequest';
 
 const App = () => {
   const [agent, setAgent] = useState<Agent>(null);
@@ -29,6 +31,7 @@ const App = () => {
   const [theirInvitation, setTheirInvitation] = useState(null);
   const [connections, setConnections] = useState<ConnectionRecord[]>([]);
   const [credentials, setCredentials] = useState<CredentialRecord[]>([]);
+  const [proofs, setProofs] = useState<ProofRecord[]>([]);
 
   async function setupAgent() {
     const agent = await initAgent({
@@ -74,6 +77,11 @@ const App = () => {
   const updateCredentials = async () => {
     const credentials = await agent.credentials.getCredentials();
     setCredentials(credentials);
+  }
+
+  const updateProofs = async () => {
+    const proofs = await agent.proof.getProofs();
+    setProofs(proofs);
   }
 
   return (
@@ -135,7 +143,20 @@ const App = () => {
                 onPress={updateCredentials} />
               {credentials.map((credential) => {
                 return (
-                  <Credential agent={agent} credential={credential} key={credential.id} />
+                  <Credential agent={agent} credential={credential} key={credential.id}/>
+                )
+              })}
+            </View>
+            )}
+            {/* PROOFS */}
+            {isInitialized && (<View style={styles.credentialsView}>
+              <Text style={styles.title}>Proof Requests: </Text>
+              <Button
+                title="Refresh List"
+                onPress={updateProofs} />
+              {proofs.map((proof) => {
+                return (
+                  <ProofRequest agent={agent} proof={proof} key={proof.id} />
                 )
               })}
             </View>
